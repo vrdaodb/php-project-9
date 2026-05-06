@@ -15,13 +15,32 @@
         </tr>
     </tbody>
 </table>
-<table data-test="checks" class="table mt-3">
+
+<form method="post" action="/urls/<?= $url['id'] ?>/checks">
+    <input type="submit" value="Запустить проверку" class="btn btn-primary mt-3">
+</form>
+
+<table data-test="checks" class="table mt-4">
     <thead>
         <tr>
             <th>ID</th>
             <th>Код ответа</th>
-            <th>Дата проверки</th>
+            <th>h1</th>
+            <th>title</th>
+            <th>description</th>
+            <th>Дата создания</th>
         </tr>
     </thead>
-    <tbody></tbody>
+    <tbody>
+        <?php foreach ($checks as $check): ?>
+        <tr>
+            <td><?= $check['id'] ?></td>
+            <td><?= $check['status_code'] ?></td>
+            <td><?= htmlspecialchars(mb_strimwidth($check['h1'] ?? '', 0, 200, '...')) ?></td>
+            <td><?= htmlspecialchars(mb_strimwidth($check['title'] ?? '', 0, 200, '...')) ?></td>
+            <td><?= htmlspecialchars(mb_strimwidth($check['description'] ?? '', 0, 200, '...')) ?></td>
+            <td><?= $check['created_at'] ?></td>
+        </tr>
+        <?php endforeach ?>
+    </tbody>
 </table>

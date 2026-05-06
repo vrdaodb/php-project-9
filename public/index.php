@@ -6,6 +6,9 @@ use Slim\Flash\Messages;
 use DI\Container;
 use Carbon\Carbon;
 use Valitron\Validator;
+use GuzzleHttp\Client;
+use GuzzleHttp\Exception\RequestException;
+use GuzzleHttp\Exception\ConnectException;
 
 require __DIR__ . '/../vendor/autoload.php';
 
@@ -61,7 +64,19 @@ $app->get('/', function ($request, $response) {
 
 $app->get('/urls', function ($request, $response) {
     $db = $this->get('db');
-    $stmt = $db->query("SELECT * FROM urls ORDER BY created_at DESC");
+    $stmt = $db->query("
+        SELECT urls.*,
+               url_checks.created_at AS last_check_at,
+               url_checks.status_code
+        FROM urls
+        LEFT JOIN url_checks ON url_checks.id = (
+            SELECT id FROM url_checks
+            WHERE url_id = urls.id
+            ORDER BY created_at DESC
+            LIMIT 1
+        )
+        ORDER BY urls.created_at DESC
+    ");
     $urls = $stmt->fetchAll();
 
     $flash = $this->get('flash')->getMessages();
@@ -131,12 +146,68 @@ $app->get('/urls/{id}', function ($request, $response, array $args) {
         return $response->withStatus(404)->write('Page not found');
     }
 
+    $stmt = $db->prepare("SELECT * FROM url_checks WHERE url_id = :url_id ORDER BY created_at DESC");
+    $stmt->execute([':url_id' => $args['id']]);
+    $checks = $stmt->fetchAll();
+
     $flash = $this->get('flash')->getMessages();
-    $content = $this->get('renderer')->fetch('urls/show.phtml', ['url' => $url]);
+    $content = $this->get('renderer')->fetch('urls/show.phtml', [
+        'url' => $url,
+        'checks' => $checks
+    ]);
     return $this->get('renderer')->render($response, 'layout.phtml', [
         'content' => $content,
         'flash' => $flash
     ]);
 })->setName('url');
+
+$app->post('/urls/{url_id}/checks', function ($request, $response, array $args) use ($router) {
+    $db = $this->get('db');
+    $urlId = $args['url_id'];
+
+    $stmt = $db->prepare("SELECT * FROM urls WHERE id = :id");
+    $stmt->execute([':id' => $urlId]);
+    $url = $stmt->fetch();
+
+    try {
+        $client = new Client(['timeout' => 10]);
+        $res = $client->get($url['name']);
+        $statusCode = $res->getStatusCode();
+
+        $stmt = $db->prepare("
+            INSERT INTO url_checks (url_id, status_code, created_at)
+            VALUES (:url_id, :status_code, :created_at)
+        ");
+        $stmt->execute([
+            ':url_id' => $urlId,
+            ':status_code' => $statusCode,
+            ':created_at' => Carbon::now()
+        ]);
+
+        $this->get('flash')->addMessage('success', 'Страница успешно проверена');
+    } catch (ConnectException $e) {
+        $this->get('flash')->addMessage('danger', 'Произошла ошибка при проверке, не удалось подключиться');
+    } catch (RequestException $e) {
+        if ($e->hasResponse()) {
+            $statusCode = $e->getResponse()->getStatusCode();
+            $stmt = $db->prepare("
+                INSERT INTO url_checks (url_id, status_code, created_at)
+                VALUES (:url_id, :status_code, :created_at)
+            ");
+            $stmt->execute([
+                ':url_id' => $urlId,
+                ':status_code' => $statusCode,
+                ':created_at' => Carbon::now()
+            ]);
+            $this->get('flash')->addMessage('warning', 'Проверка была выполнена успешно, но сервер ответил с ошибкой');
+        } else {
+            $this->get('flash')->addMessage('danger', 'Произошла ошибка при проверке, не удалось подключиться');
+        }
+    }
+
+    return $response
+        ->withHeader('Location', $router->urlFor('url', ['id' => $urlId]))
+        ->withStatus(302);
+})->setName('check');
 
 $app->run();

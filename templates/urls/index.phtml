@@ -4,7 +4,7 @@
         <tr>
             <th>ID</th>
             <th>Имя</th>
-            <th>Дата создания</th>
+            <th>Дата последней проверки</th>
             <th>Код ответа</th>
         </tr>
     </thead>
@@ -13,8 +13,8 @@
         <tr>
             <td><?= $url['id'] ?></td>
             <td><a href="/urls/<?= $url['id'] ?>"><?= htmlspecialchars($url['name']) ?></a></td>
-            <td><?= $url['created_at'] ?></td>
-            <td></td>
+            <td><?= $url['last_check_at'] ?? '' ?></td>
+            <td><?= $url['status_code'] ?? '' ?></td>
         </tr>
         <?php endforeach ?>
     </tbody>
