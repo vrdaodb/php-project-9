@@ -214,3 +214,4 @@ $app->post('/urls/{url_id}/checks', function ($request, $response, array $args) 
         ->withHeader('Location', $router->urlFor('url', ['id' => $urlId]))
         ->withStatus(302);
 })->setName('check');
+$app->run();
