@@ -34,8 +34,8 @@ $container->set('db', function () {
         $host = 'localhost';
         $port = 5432;
         $dbname = 'page_analyzer';
-        $user = getenv('USER');
-        $password = '';
+        $user = 'postgres';
+        $password = 'postgres';
     }
 
     $dsn = "pgsql:host={$host};port={$port};dbname={$dbname}";
@@ -50,16 +50,15 @@ $app = AppFactory::create();
 $app->addErrorMiddleware(true, true, true);
 $router = $app->getRouteCollector()->getRouteParser();
 
-// Главная
 $app->get('/', function ($request, $response) {
     $flash = $this->get('flash')->getMessages();
+    $content = $this->get('renderer')->fetch('index.phtml');
     return $this->get('renderer')->render($response, 'layout.phtml', [
-        'content' => $this->get('renderer')->fetch('index.phtml'),
+        'content' => $content,
         'flash' => $flash
     ]);
 })->setName('home');
 
-// Список URLs
 $app->get('/urls', function ($request, $response) {
     $db = $this->get('db');
     $stmt = $db->query("SELECT * FROM urls ORDER BY created_at DESC");
@@ -73,7 +72,6 @@ $app->get('/urls', function ($request, $response) {
     ]);
 })->setName('urls');
 
-// Добавление URL
 $app->post('/urls', function ($request, $response) use ($router) {
     $db = $this->get('db');
     $data = $request->getParsedBody();
@@ -105,7 +103,9 @@ $app->post('/urls', function ($request, $response) use ($router) {
 
     if ($existing) {
         $this->get('flash')->addMessage('warning', 'Страница уже существует');
-        return $response->withRedirect($router->urlFor('url', ['id' => $existing['id']]));
+        return $response
+            ->withHeader('Location', $router->urlFor('url', ['id' => $existing['id']]))
+            ->withStatus(302);
     }
 
     $stmt = $db->prepare("INSERT INTO urls (name, created_at) VALUES (:name, :created_at) RETURNING id");
@@ -116,10 +116,11 @@ $app->post('/urls', function ($request, $response) use ($router) {
     $id = $stmt->fetchColumn();
 
     $this->get('flash')->addMessage('success', 'Страница успешно добавлена');
-    return $response->withRedirect($router->urlFor('url', ['id' => $id]));
+    return $response
+        ->withHeader('Location', $router->urlFor('url', ['id' => $id]))
+        ->withStatus(302);
 })->setName('addUrl');
 
-// Просмотр URL
 $app->get('/urls/{id}', function ($request, $response, array $args) {
     $db = $this->get('db');
     $stmt = $db->prepare("SELECT * FROM urls WHERE id = :id");
