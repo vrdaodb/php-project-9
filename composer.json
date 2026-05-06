@@ -8,7 +8,9 @@
         "slim/flash": "^0.4.0",
         "nesbot/carbon": "^3.11",
         "illuminate/support": "^13.8",
-        "guzzlehttp/guzzle": "^7.10"
+        "guzzlehttp/guzzle": "^7.10",
+        "symfony/dom-crawler": "^7.4",
+        "symfony/css-selector": "^7.4"
     },
     "require-dev": {
         "squizlabs/php_codesniffer": "^4.0"

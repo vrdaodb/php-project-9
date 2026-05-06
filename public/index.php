@@ -173,14 +173,35 @@ $app->post('/urls/{url_id}/checks', function ($request, $response, array $args) 
         $client = new Client(['timeout' => 10]);
         $res = $client->get($url['name']);
         $statusCode = $res->getStatusCode();
+        $body = (string) $res->getBody();
+
+        $crawler = new \Symfony\Component\DomCrawler\Crawler($body);
+
+        $h1 = null;
+        if ($crawler->filter('h1')->count() > 0) {
+            $h1 = $crawler->filter('h1')->first()->text();
+        }
+
+        $title = null;
+        if ($crawler->filter('title')->count() > 0) {
+            $title = $crawler->filter('title')->first()->text();
+        }
+
+        $description = null;
+        if ($crawler->filter('meta[name="description"]')->count() > 0) {
+            $description = $crawler->filter('meta[name="description"]')->first()->attr('content');
+        }
 
         $stmt = $db->prepare("
-            INSERT INTO url_checks (url_id, status_code, created_at)
-            VALUES (:url_id, :status_code, :created_at)
+            INSERT INTO url_checks (url_id, status_code, h1, title, description, created_at)
+            VALUES (:url_id, :status_code, :h1, :title, :description, :created_at)
         ");
         $stmt->execute([
             ':url_id' => $urlId,
             ':status_code' => $statusCode,
+            ':h1' => $h1,
+            ':title' => $title,
+            ':description' => $description,
             ':created_at' => Carbon::now()
         ]);
 
@@ -190,15 +211,38 @@ $app->post('/urls/{url_id}/checks', function ($request, $response, array $args) 
     } catch (RequestException $e) {
         if ($e->hasResponse()) {
             $statusCode = $e->getResponse()->getStatusCode();
+            $body = (string) $e->getResponse()->getBody();
+
+            $crawler = new \Symfony\Component\DomCrawler\Crawler($body);
+
+            $h1 = null;
+            if ($crawler->filter('h1')->count() > 0) {
+                $h1 = $crawler->filter('h1')->first()->text();
+            }
+
+            $title = null;
+            if ($crawler->filter('title')->count() > 0) {
+                $title = $crawler->filter('title')->first()->text();
+            }
+
+            $description = null;
+            if ($crawler->filter('meta[name="description"]')->count() > 0) {
+                $description = $crawler->filter('meta[name="description"]')->first()->attr('content');
+            }
+
             $stmt = $db->prepare("
-                INSERT INTO url_checks (url_id, status_code, created_at)
-                VALUES (:url_id, :status_code, :created_at)
+                INSERT INTO url_checks (url_id, status_code, h1, title, description, created_at)
+                VALUES (:url_id, :status_code, :h1, :title, :description, :created_at)
             ");
             $stmt->execute([
                 ':url_id' => $urlId,
                 ':status_code' => $statusCode,
+                ':h1' => $h1,
+                ':title' => $title,
+                ':description' => $description,
                 ':created_at' => Carbon::now()
             ]);
+
             $this->get('flash')->addMessage('warning', 'Проверка была выполнена успешно, но сервер ответил с ошибкой');
         } else {
             $this->get('flash')->addMessage('danger', 'Произошла ошибка при проверке, не удалось подключиться');
@@ -209,5 +253,4 @@ $app->post('/urls/{url_id}/checks', function ($request, $response, array $args) 
         ->withHeader('Location', $router->urlFor('url', ['id' => $urlId]))
         ->withStatus(302);
 })->setName('check');
-
 $app->run();
