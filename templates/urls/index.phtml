@@ -1,0 +1,21 @@
+<h1 class="mt-4">Сайты</h1>
+<table data-test="urls" class="table table-bordered mt-3">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Имя</th>
+            <th>Дата создания</th>
+            <th>Код ответа</th>
+        </tr>
+    </thead>
+    <tbody>
+        <?php foreach ($urls as $url): ?>
+        <tr>
+            <td><?= $url['id'] ?></td>
+            <td><a href="/urls/<?= $url['id'] ?>"><?= htmlspecialchars($url['name']) ?></a></td>
+            <td><?= $url['created_at'] ?></td>
+            <td></td>
+        </tr>
+        <?php endforeach ?>
+    </tbody>
+</table>

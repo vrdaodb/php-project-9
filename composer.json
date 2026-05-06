@@ -3,7 +3,11 @@
         "slim/slim": "^4.15",
         "slim/psr7": "^1.8",
         "php-di/php-di": "^7.1",
-        "slim/php-view": "^3.4"
+        "slim/php-view": "^3.4",
+        "vlucas/valitron": "^1.4",
+        "slim/flash": "^0.4.0",
+        "nesbot/carbon": "^3.11",
+        "illuminate/support": "^13.8"
     },
     "require-dev": {
         "squizlabs/php_codesniffer": "^4.0"

@@ -1,0 +1,27 @@
+<h1 class="mt-4"><?= htmlspecialchars($url['name']) ?></h1>
+<table data-test="url" class="table mt-3">
+    <tbody>
+        <tr>
+            <th>ID</th>
+            <td><?= $url['id'] ?></td>
+        </tr>
+        <tr>
+            <th>Имя</th>
+            <td><?= htmlspecialchars($url['name']) ?></td>
+        </tr>
+        <tr>
+            <th>Дата создания</th>
+            <td><?= $url['created_at'] ?></td>
+        </tr>
+    </tbody>
+</table>
+<table data-test="checks" class="table mt-3">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Код ответа</th>
+            <th>Дата проверки</th>
+        </tr>
+    </thead>
+    <tbody></tbody>
+</table>
